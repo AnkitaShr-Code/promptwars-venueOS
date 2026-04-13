@@ -37,8 +37,14 @@ export class CrowdProcessingEngine {
      */
     async handleAccessEvent(event: AccessEvent) {
         const delta = event.accessType === AccessType.ENTRY ? event.count : -event.count;
-        const newTotal = await redis.incrby(this.OCCUPANCY_KEY, delta);
+        let newTotal = await redis.incrby(this.OCCUPANCY_KEY, delta);
         
+        // Prevent negative occupancy 
+        if (newTotal < 0) {
+            newTotal = 0;
+            await redis.set(this.OCCUPANCY_KEY, '0');
+        }
+
         log.debug({ delta, newTotal, correlationId: event.correlationId }, 'Global occupancy updated');
 
         await eventBus.publish({

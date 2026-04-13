@@ -5,17 +5,46 @@ import { dlq } from './shared/dlq.js';
 
 const log = createLogger('Simulation');
 
+/**
+ * ----------------------------------------------------
+ * CONFIGURABLE DEMO DATA
+ * Tweak these variables to see how the system reacts.
+ * ----------------------------------------------------
+ */
+export const DemoConfig = {
+    // Traffic rates (calls per interval)
+    baseEntries: 20,
+    baseExits: 5,
+    
+    // Halftime spike rates
+    halftimeEntries: 2,
+    halftimeExits: 150,
+    halftimeConcessionSpike: 500, // Density spike at ZONE_B
+    
+    // Base zone population logic (randomized base + variance)
+    baseDensity: 150, 
+    densityVariance: 100,
+
+    // Timing
+    trafficIntervalMs: 2000,
+    halftimeDurationMs: 20000,
+    halftimeStartDelayMs: 10000
+};
+
 export class VenueSimulation {
     private interval: NodeJS.Timeout | null = null;
     private isHalftime = false;
 
     public start() {
-        log.info('Starting VenueOS Simulation (50k attendee load)...');
+        log.info('Starting VenueOS Simulation...');
 
-        // 1. Regular Traffic Loop (Every 2s)
+        // 0. Initial Baseline Population (Pre-fill the stadium so it isn't empty)
+        ingestionService.ingestAccessPulse('GATE_MAIN', AccessType.ENTRY, 35000).catch(e => log.error('Failed to pre-fill stadium'));
+
+        // 1. Regular Traffic Loop
         this.interval = setInterval(() => {
             this.generateTraffic();
-        }, 2000);
+        }, DemoConfig.trafficIntervalMs);
 
         // 2. Interpolation Watchdog (Every 5s)
         setInterval(() => {
@@ -35,8 +64,8 @@ export class VenueSimulation {
 
     private async generateTraffic() {
         // Gates (Entries/Exits)
-        const entries = this.isHalftime ? 5 : 50; // Fewer entries during halftime
-        const exits = this.isHalftime ? 200 : 10; // Massive exits during halftime
+        const entries = this.isHalftime ? DemoConfig.halftimeEntries : DemoConfig.baseEntries;
+        const exits = this.isHalftime ? DemoConfig.halftimeExits : DemoConfig.baseExits;
         
         for (let i = 0; i < entries; i++) {
             await ingestionService.ingestAccessPulse(`GATE_${Math.floor(Math.random() * 10)}`, AccessType.ENTRY);
@@ -46,11 +75,16 @@ export class VenueSimulation {
         }
 
         // Zone Sensed Data
-        const zones = ['ZONE_A', 'ZONE_B', 'ZONE_C', 'ZONE_D'];
+        const zones = [
+            'N', 'S', 'E', 'W', 
+            'NE', 'NW', 'SE', 'SW'
+        ];
+        
         for (const zoneId of zones) {
-            // High density spike in Zone B during halftime (concessions)
-            const spike = (this.isHalftime && zoneId === 'ZONE_B') ? 400 : 0;
-            const base = 200 + Math.floor(Math.random() * 100);
+            // High density spike in Concessions (East/West) during halftime
+            const isConcourse = zoneId === 'E' || zoneId === 'W';
+            const spike = (this.isHalftime && isConcourse) ? DemoConfig.halftimeConcessionSpike : 0;
+            const base = DemoConfig.baseDensity + Math.floor(Math.random() * DemoConfig.densityVariance);
             
             await ingestionService.ingestSensedCrowd(
                 zoneId, 

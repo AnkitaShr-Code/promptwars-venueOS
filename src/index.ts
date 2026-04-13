@@ -1,15 +1,21 @@
 import './gateway/index.js'; // Starts Gateway
-import { ingestionService } from './services/ingestion/index.js';
-import { processingEngine } from './services/processing/index.js';
-import { queuePredictionService } from './services/prediction/index.js';
-import { notificationService } from './services/notification/index.js';
-import { simulation } from './simulation.js';
+import './services/ingestion/index.js';
+import './services/processing/index.js';
+import './services/prediction/index.js';
+import './services/notification/index.js';
+import './services/dashboard/index.js';
+import { simulation, DemoConfig } from './simulation.js';
 import { createLogger } from './shared/logger.js';
+import { redis } from './shared/redis.js';
 
 const log = createLogger('Main');
 
 async function bootstrap() {
     log.info('VenueOS Bootstrapping...');
+
+    // Clear stale state for demo consistency
+    await redis.flushall();
+    log.info('Redis state flushed for clean simulation');
 
     // Note: Services are initialized via their static exports and constructors
     // They are now listening to the EventBus.
@@ -17,15 +23,15 @@ async function bootstrap() {
     // Start Simulation
     simulation.start();
 
-    // Trigger Halftime mode after 10 seconds for demo purposes
+    // Trigger Halftime mode configured by DemoConfig
     setTimeout(() => {
         simulation.triggerHalftime(true);
-    }, 10000);
+    }, DemoConfig.halftimeStartDelayMs);
 
-    // Stop Halftime after 20 seconds
+    // Stop Halftime
     setTimeout(() => {
         simulation.triggerHalftime(false);
-    }, 30000);
+    }, DemoConfig.halftimeStartDelayMs + DemoConfig.halftimeDurationMs);
 
     log.info('VenueOS fully operational.');
 }

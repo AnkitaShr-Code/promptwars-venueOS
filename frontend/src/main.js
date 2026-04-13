@@ -1,97 +1,71 @@
 import { Engine3D } from './engine3d.js';
-
-// VenueEvent schemas
-interface VenueEvent {
-    type: string;
-    correlationId: string;
-    timestamp: number;
-    [key: string]: any;
-}
-
 // 1. Initialize 3D Engine
 const engine = new Engine3D('canvas-container');
-
 // 1.5 Setup Tooltips
-const hoverTooltip = document.getElementById('hover-tooltip')!;
-const tooltipName = document.getElementById('tooltip-name')!;
-const tooltipCap = document.getElementById('tooltip-cap')!;
-const tooltipDen = document.getElementById('tooltip-den')!;
-
-const clickPanel = document.getElementById('click-panel')!;
-const clickName = document.getElementById('click-name')!;
-const clickSections = document.getElementById('click-sections')!;
-
+const hoverTooltip = document.getElementById('hover-tooltip');
+const tooltipName = document.getElementById('tooltip-name');
+const tooltipCap = document.getElementById('tooltip-cap');
+const tooltipDen = document.getElementById('tooltip-den');
+const clickPanel = document.getElementById('click-panel');
+const clickName = document.getElementById('click-name');
+const clickSections = document.getElementById('click-sections');
 engine.onHoverZone = (data, screenPos) => {
     if (!data || !screenPos) {
         hoverTooltip.style.opacity = '0';
         return;
     }
-    
     tooltipName.innerText = data.name;
     tooltipCap.innerText = `CAP: ${data.capacity.toLocaleString()}`;
     // density ratio (simulated as currentDensity / 1.0 logic from Processing)
     const pct = Math.round((data.currentDensity || 0) * 100);
     tooltipDen.innerText = `${pct}% CROWDED`;
     tooltipDen.className = pct > 80 ? 'font-bold text-amber-400' : 'font-bold text-cyan-500';
-
     hoverTooltip.style.left = `${screenPos.x}px`;
     hoverTooltip.style.top = `${screenPos.y}px`;
     hoverTooltip.style.opacity = '1';
 };
-
 engine.onClickZone = (data) => {
     if (!data) {
         clickPanel.style.opacity = '0';
         return;
     }
-
     clickName.innerText = data.name;
     const colorHex = data.color;
-    
     // Build badges
-    clickSections.innerHTML = data.sections.map((sec: number) => 
-        `<span style="background-color: ${colorHex}40; border-color: ${colorHex}; color: ${colorHex}" class="border border-solid px-2 py-1 rounded shadow-sm drop-shadow-md">
+    clickSections.innerHTML = data.sections.map((sec) => `<span style="background-color: ${colorHex}40; border-color: ${colorHex}; color: ${colorHex}" class="border border-solid px-2 py-1 rounded shadow-sm drop-shadow-md">
             Sec ${sec}
-        </span>`
-    ).join('');
-
+        </span>`).join('');
     clickPanel.style.opacity = '1';
 };
-
 // 2. HUD Elements
-const occupancyText = document.getElementById('total-occupancy')!;
-const alertsCountText = document.getElementById('active-alerts-count')!;
-const alertsFeed = document.getElementById('alerts-feed')!;
-const connectionStatus = document.getElementById('connection-status')!;
-
+const occupancyText = document.getElementById('total-occupancy');
+const alertsCountText = document.getElementById('active-alerts-count');
+const alertsFeed = document.getElementById('alerts-feed');
+const connectionStatus = document.getElementById('connection-status');
 // 3. Connect WebSockets
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 // Proxy routes ws://localhost:3000 to Dashboard API (which is ws://localhost:3001) usually,
 // But the user runs vite dev server on 5173. The WebSocket server is hardcoded to 3001 in backend.
 const ws = new WebSocket(`ws://${window.location.hostname}:3001`);
-
 let activeAlerts = 0;
-
 ws.onopen = () => {
     connectionStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse drop-shadow-neon"></span> SECURE LINK`;
     connectionStatus.className = 'flex items-center gap-2 text-xs font-bold text-green-400';
 };
-
 ws.onclose = () => {
     connectionStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-500 drop-shadow-neon"></span> DISCONNECTED`;
     connectionStatus.className = 'flex items-center gap-2 text-xs font-bold text-red-500';
 };
-
 ws.onmessage = (msg) => {
     try {
-        const event: VenueEvent = JSON.parse(msg.data);
+        const event = JSON.parse(msg.data);
         handleEvent(event);
-    } catch (e) {
+    }
+    catch (e) {
         console.error('Failed to parse WebSocket message', e);
     }
 };
-
-function handleEvent(event: VenueEvent) {
+function handleEvent(event) {
     if (event.type === 'update.venue') {
         if (event.zoneId && event.density !== undefined) {
             // Pipe density data into 3D heat map
@@ -100,21 +74,18 @@ function handleEvent(event: VenueEvent) {
         if (event.totalOccupancy !== undefined) {
             occupancyText.innerText = event.totalOccupancy.toLocaleString();
         }
-    } else if (event.type === 'alert.crowd') {
+    }
+    else if (event.type === 'alert.crowd') {
         addAlert(event);
     }
 }
-
-function addAlert(event: VenueEvent) {
+function addAlert(event) {
     if (activeAlerts === 0) {
         alertsFeed.innerHTML = ''; // Clear "No active incidents" text
     }
-
     const isCleared = event.severity === 'LOW';
     const alertId = `alert-${event.zoneId}`;
-    
     const existingAlert = document.getElementById(alertId);
-
     if (isCleared) {
         if (existingAlert) {
             existingAlert.remove();
@@ -126,14 +97,11 @@ function addAlert(event: VenueEvent) {
         }
         return;
     }
-
     // It's a new or existing active alert
     const timeStr = new Date(event.timestamp).toLocaleTimeString();
-    
     if (!existingAlert) {
         activeAlerts++;
         alertsCountText.innerText = activeAlerts.toString();
-        
         const div = document.createElement('div');
         div.id = alertId;
         div.className = 'alert-item p-3 rounded-lg text-xs flex justify-between items-start';
@@ -151,3 +119,4 @@ function addAlert(event: VenueEvent) {
         alertsFeed.prepend(div);
     }
 }
+//# sourceMappingURL=main.js.map

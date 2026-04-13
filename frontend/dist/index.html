@@ -7,7 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./src/style.css">
+  <script type="module" crossorigin src="/assets/index-jV1FKAew.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C2sQKOhg.css">
 </head>
 <body class="bg-deep-slate text-white font-inter overflow-hidden m-0 p-0 w-full h-screen relative">
     
@@ -21,8 +22,8 @@
         <header class="flex justify-between items-start pointer-events-auto">
             <div class="glass-card p-4 rounded-xl flex items-center gap-4">
                 <div>
-                    <h1 class="m-0 whitespace-nowrap font-outfit text-2xl font-bold tracking-tight text-cyan-400 drop-shadow-neon">VENUE<span class="text-white">OS</span> C2</h1>
-                    <p class="m-0 whitespace-nowrap text-slate-300 text-xs tracking-wider">3D ISOMETRIC OVERVIEW</p>
+                    <h1 class="font-outfit text-2xl font-bold tracking-tight text-cyan-400 drop-shadow-neon">VENUE<span class="text-white">OS</span> C2</h1>
+                    <p class="text-slate-300 text-xs tracking-wider">3D ISOMETRIC OVERVIEW</p>
                 </div>
                 <div class="h-8 w-px bg-cyan-900/50"></div>
                 <div>
@@ -89,29 +90,10 @@
         
         <!-- Controls Helper -->
         <div class="text-center mt-2 pointer-events-none">
-            <span class="text-[10px] tracking-widest text-slate-500 uppercase">Interactive: Hover for Details | Click to Expand Sections</span>
-        </div>
-    </div>
-
-    <!-- 3D Interactive Tooltips (Injected Dynamically via main.ts) -->
-    <div id="hover-tooltip" class="absolute z-20 pointer-events-none opacity-0 transition-opacity duration-200 glass-card p-3 rounded-lg border-l-4 border-cyan-500 transform -translate-x-1/2 -translate-y-[120%]">
-        <h4 id="tooltip-name" class="font-outfit font-bold text-sm text-cyan-400 drop-shadow-neon uppercase tracking-wide">Zone Name</h4>
-        <div class="flex gap-4 mt-1 text-[10px] text-slate-300 uppercase tracking-widest">
-            <span id="tooltip-cap">Cap: 0</span>
-            <span id="tooltip-den" class="font-bold text-amber-400">0%</span>
-        </div>
-    </div>
-
-    <!-- Section Details Panel (Visible on Click) -->
-    <div id="click-panel" class="absolute left-[340px] top-[150px] z-20 pointer-events-none opacity-0 transition-opacity duration-300 glass-card p-4 rounded-xl border-l-2 border-amber-500 w-64">
-        <h4 id="click-name" class="font-outfit font-bold text-amber-500 text-lg uppercase tracking-wide">Zone Name</h4>
-        <p class="text-[10px] tracking-widest text-cyan-500 mb-3">SECTIONS MAP</p>
-        <div id="click-sections" class="flex flex-wrap gap-2 text-xs font-bold font-outfit text-white">
-            <!-- Badges injected here -->
+            <span class="text-[10px] tracking-widest text-slate-500 uppercase">Interactive: Left-Click Rotate | Right-Click Pan | Scroll Zoom</span>
         </div>
     </div>
 
     <!-- We load scripts as ES modules -->
-    <script type="module" src="./src/main.ts"></script>
 </body>
 </html>
