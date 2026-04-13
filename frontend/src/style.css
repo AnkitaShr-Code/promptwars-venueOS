@@ -1,0 +1,84 @@
+:root {
+  --deep-bg: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.5);
+  --accent-cyan: #22d3ee;
+  --accent-gold: #f59e0b;
+}
+
+body {
+  margin: 0;
+  background-color: var(--deep-bg);
+  color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(circle at 50% 100%, #1e293b 0%, #0f172a 100%);
+  overflow: hidden;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+#heatmap-canvas {
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.2));
+}
+
+.alert-item {
+  animation: slideIn 0.3s ease-out;
+  border-left: 4px solid #f59e0b;
+  transition: all 0.2s ease;
+}
+
+.alert-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Utilities */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+/* Gauge Overrides */
+#occupancy-gauge {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Tailwind-ish Utilities for non-tailwind setup */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1; }
+.grid { display: grid; }
+.grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.col-span-8 { grid-column: span 8 / span 8; }
+.col-span-4 { grid-column: span 4 / span 4; }
+.gap-6 { gap: 1.5rem; }
+.p-6 { padding: 1.5rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.text-cyan-400 { color: #22d3ee; }
+.text-amber-500 { color: #f59e0b; }
+.text-green-400 { color: #4ade80; }
+.font-bold { font-weight: 700; }
+.mb-8 { margin-bottom: 2rem; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
