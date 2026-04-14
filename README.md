@@ -1,7 +1,5 @@
 # VenueOS C2
 
-![VenueOS C2 Dashboard](./SampleUIImage.png)
-
 VenueOS C2 (Command & Control) is the operating system for physical venues. Just like Android or Windows manages apps, resources, and user interactions—VenueOS manages people, movement, and real-time decisions inside a venue. Not just dashboards. Not just alerts. Control. Coordination. Optimization.
 
 Designed to handle large-scale sporting events with high architectural limits, VenueOS C2 actively targets crowd telemetry, localized mathematical density congestion, long queues, and precise topological metrics.
