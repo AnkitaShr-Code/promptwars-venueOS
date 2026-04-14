@@ -16,11 +16,11 @@ steps:
     args: 
       - 'run'
       - 'deploy'
-      - 'venueos-c2'
+      - 'venue-os'
       - '--image'
       - 'gcr.io/$PROJECT_ID/venueos-c2'
       - '--region'
-      - 'us-central1'
+      - 'asia-south1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
