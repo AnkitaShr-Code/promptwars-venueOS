@@ -13,7 +13,12 @@ import { createLogger } from '../../shared/logger.js';
 
 const log = createLogger('ProcessingEngine');
 
-const GLOBAL_MAX_CAPACITY = 50000;
+const ZONE_CAPS: Record<string, number> = {
+    'N': 7858, 'NE': 3169, 'E': 4697, 'SE': 3148,
+    'S': 5880, 'SW': 3220, 'W': 4253, 'NW': 3149
+};
+
+const GLOBAL_MAX_CAPACITY = 35374; // Match frontend total capacity
 const CONGESTION_THRESHOLD = 0.8;
 const RECOVERY_THRESHOLD = 0.7;
 const DECAY_LAMBDA = 0.01; // Decay rate for compliance curve
@@ -55,6 +60,16 @@ export class CrowdProcessingEngine {
             servicePath: ['ProcessingEngine'],
             totalOccupancy: newTotal
         } as VenueStateUpdate);
+
+        // Global capacity hysteresis alert
+        const alertKey = `${this.ALERT_PREFIX}VENUE`;
+        const isAlertActive = (await redis.get(alertKey)) === 'true';
+
+        if (!isAlertActive && newTotal >= GLOBAL_MAX_CAPACITY) {
+            await this.triggerAlert('VENUE', 'CRITICAL', 'Venue is at mathematical capacity. Restrict ingress immediately.', event.correlationId);
+        } else if (isAlertActive && newTotal <= (GLOBAL_MAX_CAPACITY * 0.98)) {
+            await this.clearAlert('VENUE', event.correlationId);
+        }
     }
 
     /**
@@ -62,7 +77,8 @@ export class CrowdProcessingEngine {
      */
     async handleSensedEvent(event: SensedCrowdEvent) {
         const zoneId = event.zoneId;
-        const rawDensity = event.count / 1000; // Normalized density (assume 1000 cap per zone for demo)
+        const capacity = ZONE_CAPS[zoneId] || 1000;
+        const rawDensity = event.count / capacity; // True mathematical scaling
         
         // 1. APPLY COMPLIANCE DECAY (V4 Mandate)
         const adjustedDensity = await this.applyComplianceDecay(zoneId, rawDensity);

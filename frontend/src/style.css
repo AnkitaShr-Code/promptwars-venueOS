@@ -1,6 +1,6 @@
 :root {
-  --deep-bg: #070a13;
-  --glass-bg: rgba(15, 23, 42, 0.4);
+  --deep-bg: #1e293b;
+  --glass-bg: rgba(30, 41, 59, 0.5);
   --accent-cyan: #22d3ee;
   --accent-amber: #f59e0b;
 }
@@ -13,7 +13,7 @@ body {
 }
 
 #canvas-container {
-  background: radial-gradient(circle at 50% 50%, #171d2b 0%, #05080f 100%);
+  background: radial-gradient(circle at 50% 50%, #334155 0%, #1e293b 100%);
 }
 
 .glass-card {
@@ -117,10 +117,12 @@ body {
 .border-b-2 { border-bottom-width: 2px; border-bottom-style: solid; }
 .border-l-2 { border-left-width: 2px; border-left-style: solid; }
 .border-l-4 { border-left-width: 4px; border-left-style: solid; }
-.border-cyan-500 { border-color: #06b6d4; }
-.border-cyan-500\/30 { border-color: rgba(6, 182, 212, 0.3); }
-.border-amber-500 { border-color: #f59e0b; }
-.border-amber-500\/50 { border-color: rgba(245, 158, 11, 0.5); }
+.border-cyan-500 { border-color: #0284c7; }
+.border-cyan-500\/30 { border-color: rgba(2, 132, 199, 0.3); }
+.border-amber-500 { border-color: #b45309; }
+.border-amber-500\/50 { border-color: rgba(180, 83, 9, 0.5); }
+.border-green-500 { border-color: #15803d; }
+.border-green-500\/30 { border-color: rgba(21, 128, 61, 0.3); }
 .bg-cyan-900\/50 { background-color: rgba(22, 78, 99, 0.5); }
 .bg-slate-800\/50 { background-color: rgba(30, 41, 59, 0.5); }
 .bg-green-400 { background-color: #4ade80; }

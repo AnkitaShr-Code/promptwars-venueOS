@@ -1,16 +1,18 @@
-# VenueOS
+# VenueOS C2
 
-VenueOS is the operating system for physical venues. Just like Android or Windows manages apps, resources, and user interactions—VenueOS manages people, movement, and real-time decisions inside a venue. Not just dashboards. Not just alerts. Control. Coordination. Optimization.
+![VenueOS C2 Dashboard](./SampleUIImage.png)
 
-Designed to handle large-scale sporting events with 50,000+ attendees, VenueOS coordinates real-time physical-world movement to tackle crowd congestion, long queues, and slow incident responses.
+VenueOS C2 (Command & Control) is the operating system for physical venues. Just like Android or Windows manages apps, resources, and user interactions—VenueOS manages people, movement, and real-time decisions inside a venue. Not just dashboards. Not just alerts. Control. Coordination. Optimization.
+
+Designed to handle large-scale sporting events with high architectural limits, VenueOS C2 actively targets crowd telemetry, localized mathematical density congestion, long queues, and precise topological metrics.
 
 ## ✨ Features
 
-- **Real-Time Crowd Telemetry**: High-throughput ingestion of turnstile access pulses and raw spatial density data (e.g., from cameras).
-- **Intelligent Alerting via Hysteresis**: Stateful congestion alerts that prevent "flapping." For example, alerts trigger at 80% capacity but only clear when it drops below 70%.
+- **Real-Time Crowd Telemetry**: High-throughput ingestion of turnstile access pulses and raw spatial density data tracking exact global limits (SPACE LEFT algorithms).
+- **Intelligent Alerting via Hysteresis**: Stateful congestion alerts that prevent "flapping." Real-time dynamic scaling tracks raw populations and generates `alert.crowd` incidents safely.
 - **Queue Prediction (M/M/1 Modeling)**: Calculates live expected wait times at points of interest (food stalls, restrooms) based on arrival ($\lambda$) and service ($\mu$) rates.
 - **Resilient Notification Governor**: Outbound coordination messages are rate-limited, guarded by Circuit Breakers (`opossum`), and tuned by a "Compliance Decay" projection to prevent user fatigue.
-- **High-Fidelity Operator Dashboard**: A real-time, glassmorphic UI featuring a live Canvas-based Heatmap and synchronized WebSocket data streams.
+- **High-Fidelity Operator Dashboard (C2)**: A real-time, interactive UI showcasing a meticulously crafted `three.js` light-dark stadium model, interactive popup management panes, and synchronized WebSocket feed alerts.
 - **Self-Healing Infrastructure**: In-memory EventBus with built-in backpressure, automated missing-data interpolation, and a Redis-backed Dead Letter Queue (DLQ).
 
 ## 🏗️ Architecture

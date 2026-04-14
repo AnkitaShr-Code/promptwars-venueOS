@@ -1,4 +1,6 @@
-import { Engine3D } from './engine3d.js';
+import { Engine3D, STADIUM_DATA } from './engine3d.js';
+
+const TOTAL_CAPACITY = STADIUM_DATA.zones.reduce((sum, zone) => sum + zone.capacity, 0);
 
 // VenueEvent schemas
 interface VenueEvent {
@@ -60,6 +62,7 @@ engine.onClickZone = (data) => {
 
 // 2. HUD Elements
 const occupancyText = document.getElementById('total-occupancy')!;
+const spaceLeftText = document.getElementById('space-left')!;
 const alertsCountText = document.getElementById('active-alerts-count')!;
 const alertsFeed = document.getElementById('alerts-feed')!;
 const connectionStatus = document.getElementById('connection-status')!;
@@ -99,6 +102,9 @@ function handleEvent(event: VenueEvent) {
         }
         if (event.totalOccupancy !== undefined) {
             occupancyText.innerText = event.totalOccupancy.toLocaleString();
+            if (spaceLeftText) {
+                spaceLeftText.innerText = Math.max(0, TOTAL_CAPACITY - event.totalOccupancy).toLocaleString();
+            }
         }
     } else if (event.type === 'alert.crowd') {
         addAlert(event);
@@ -136,7 +142,8 @@ function addAlert(event: VenueEvent) {
         
         const div = document.createElement('div');
         div.id = alertId;
-        div.className = 'alert-item p-3 rounded-lg text-xs flex justify-between items-start';
+        div.className = 'alert-item p-3 rounded-lg text-xs flex justify-between items-start pointer-events-auto';
+        div.style.cursor = 'pointer';
         div.innerHTML = `
             <div>
                 <strong class="text-amber-400 drop-shadow-neon-amber text-[10px] tracking-widest">${event.zoneId} BOTTLENECK</strong>
@@ -148,6 +155,15 @@ function addAlert(event: VenueEvent) {
             </div>
             <span class="text-[9px] text-slate-500">${timeStr}</span>
         `;
+        
+        // Let clicking the alert itself select the zone in the 3D engine
+        div.addEventListener('click', (e) => {
+            // Prevent triggering if clicking the action buttons
+            if ((e.target as HTMLElement).tagName !== 'BUTTON') {
+                engine.selectZone(event.zoneId);
+            }
+        });
+
         alertsFeed.prepend(div);
     }
 }

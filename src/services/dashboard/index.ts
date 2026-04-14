@@ -59,9 +59,35 @@ export class DashboardAPI {
     }
 
     private setupWebSockets() {
-        wss.on('connection', (ws) => {
+        wss.on('connection', async (ws) => {
             log.info('New UI client connected');
             this.clients.add(ws);
+            
+            // Re-sync active alerts for the new client
+            try {
+                const keys = await redis.keys('alert:active:*');
+                for (const key of keys) {
+                    if (await redis.get(key) === 'true') {
+                        const zoneId = key.split(':').pop();
+                        if (zoneId) {
+                            const event: VenueEvent = {
+                                type: 'alert.crowd',
+                                schemaVersion: '1.0.0',
+                                correlationId: 'sync-on-connect',
+                                timestamp: Date.now(),
+                                servicePath: ['DashboardAPI'],
+                                zoneId,
+                                severity: 'HIGH',
+                                message: 'Active bottleneck detected.'
+                            };
+                            if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
+                        }
+                    }
+                }
+            } catch (err) {
+                log.error({ err }, 'Failed to sync alerts on WS connection');
+            }
+
             ws.on('close', () => this.clients.delete(ws));
         });
     }

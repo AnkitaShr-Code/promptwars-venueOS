@@ -39,6 +39,10 @@
                     <p class="text-[10px] text-cyan-500 font-bold tracking-widest mb-1">OCCUPANTS</p>
                     <p id="total-occupancy" class="text-3xl font-outfit font-bold drop-shadow-sm">0</p>
                 </div>
+                <div class="glass-card p-4 rounded-xl min-w-[120px] border-green-500/30 border-b-2">
+                    <p class="text-[10px] text-green-500 font-bold tracking-widest mb-1">SPACE LEFT</p>
+                    <p id="space-left" class="text-3xl font-outfit font-bold text-green-400 drop-shadow-sm">0</p>
+                </div>
                 <div class="glass-card p-4 rounded-xl min-w-[120px] border-amber-500/30 border-b-2">
                     <p class="text-[10px] text-amber-500 font-bold tracking-widest mb-1">WARNINGS</p>
                     <p id="active-alerts-count" class="text-3xl font-outfit font-bold text-amber-400 drop-shadow-neon-amber">0</p>
@@ -103,7 +107,7 @@
     </div>
 
     <!-- Section Details Panel (Visible on Click) -->
-    <div id="click-panel" class="absolute left-[340px] top-[150px] z-20 pointer-events-none opacity-0 transition-opacity duration-300 glass-card p-4 rounded-xl border-l-2 border-amber-500 w-64">
+    <div id="click-panel" style="left: 340px; top: 150px;" class="absolute z-20 pointer-events-none opacity-0 transition-opacity duration-300 glass-card p-4 rounded-xl border-l-2 border-amber-500 w-64">
         <h4 id="click-name" class="font-outfit font-bold text-amber-500 text-lg uppercase tracking-wide">Zone Name</h4>
         <p class="text-[10px] tracking-widest text-cyan-500 mb-3">SECTIONS MAP</p>
         <div id="click-sections" class="flex flex-wrap gap-2 text-xs font-bold font-outfit text-white">

@@ -42,7 +42,7 @@ export class Engine3D {
         if (!container) throw new Error('Canvas container not found');
 
         this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x05080f, 0.002);
+        this.scene.fog = new THREE.FogExp2(0x1e293b, 0.002);
 
         this.camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1500);
         this.camera.position.set(0, 450, 450); // Angled down
@@ -183,7 +183,16 @@ export class Engine3D {
 
             // Create a floating HTML Label for this zone
             const label = document.createElement('div');
-            label.className = 'absolute z-10 pointer-events-none text-white font-bold text-[11px] drop-shadow-md text-center transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200';
+            label.style.position = 'absolute';
+            label.style.zIndex = '10';
+            label.style.pointerEvents = 'none';
+            label.style.color = '#ffffff';
+            label.style.fontWeight = 'bold';
+            label.style.fontSize = '11px';
+            label.style.textAlign = 'center';
+            label.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
+            label.style.transform = 'translate(-50%, -50%)';
+            label.style.transition = 'all 200ms ease';
             label.innerHTML = `${zoneCfg.name}<br/><span style="color:${zoneCfg.color}">${zoneCfg.id}</span>`;
             document.getElementById('canvas-container')?.appendChild(label);
             this.labels.set(zoneCfg.id, label);
@@ -203,6 +212,11 @@ export class Engine3D {
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersects = this.raycaster.intersectObjects(Array.from(this.zones.values()));
         const clickedTarget = intersects.length > 0 ? intersects[0].object as THREE.Mesh : null;
+        this.selectZone(clickedTarget ? clickedTarget.userData.id : null);
+    }
+
+    public selectZone(zoneId: string | null) {
+        const clickedTarget = zoneId ? this.zones.get(zoneId) || null : null;
 
         if (clickedTarget) {
             // Toggle expansion
@@ -309,9 +323,7 @@ export class Engine3D {
                 const y = (0.5 - vector.y / 2) * window.innerHeight;
                 label.style.left = `${x}px`;
                 label.style.top = `${y}px`;
-                
-                // Hide label if it goes entirely behind camera
-                label.style.display = vector.z > 1 ? 'none' : 'block';
+                label.style.display = 'block';
             }
         });
 

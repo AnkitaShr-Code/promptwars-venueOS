@@ -39,7 +39,7 @@ export class VenueSimulation {
         log.info('Starting VenueOS Simulation...');
 
         // 0. Initial Baseline Population (Pre-fill the stadium so it isn't empty)
-        ingestionService.ingestAccessPulse('GATE_MAIN', AccessType.ENTRY, 35000).catch(e => log.error('Failed to pre-fill stadium'));
+        ingestionService.ingestAccessPulse('GATE_MAIN', AccessType.ENTRY, 25000).catch(e => log.error('Failed to pre-fill stadium'));
 
         // 1. Regular Traffic Loop
         this.interval = setInterval(() => {
@@ -79,17 +79,37 @@ export class VenueSimulation {
             'N', 'S', 'E', 'W', 
             'NE', 'NW', 'SE', 'SW'
         ];
+        const ZONE_CAPS: Record<string, number> = {
+            'N': 7858, 'NE': 3169, 'E': 4697, 'SE': 3148,
+            'S': 5880, 'SW': 3220, 'W': 4253, 'NW': 3149
+        };
         
         for (const zoneId of zones) {
-            // High density spike in Concessions (East/West) during halftime
+            const cap = ZONE_CAPS[zoneId] || 3000;
             const isConcourse = zoneId === 'E' || zoneId === 'W';
-            const spike = (this.isHalftime && isConcourse) ? DemoConfig.halftimeConcessionSpike : 0;
-            const base = DemoConfig.baseDensity + Math.floor(Math.random() * DemoConfig.densityVariance);
+            const halftimeSpike = (this.isHalftime && isConcourse) ? 0.20 : 0;
+            
+            // Introduce spontaneous bottlenecks for demo purposes to generate more warnings
+            let demoSpike = 0;
+            if (zoneId === 'N') {
+                demoSpike = 0.15; // 15% bump
+            } else if (zoneId === 'SW') {
+                demoSpike = 0.25; // 25% bump
+            } else if (zoneId === 'SE' && Math.random() > 0.5) {
+                demoSpike = 0.18; // Flapping limit
+            }
+
+            // Normal occupancy averages around 65-75% matching the global 25k initialization
+            const targetDensity = 0.65 + (Math.random() * 0.10) + halftimeSpike + demoSpike;
+            
+            // NOTE: IngestionService applies a 1.5x multiplier for CONCOURSE inputs (phantom load)
+            // To achieve the target density, we must simulate sensing only a fraction of people 
+            const sensorCount = Math.floor(cap * (targetDensity / 1.5));
             
             await ingestionService.ingestSensedCrowd(
                 zoneId, 
                 ZoneType.CONCOURSE, 
-                base + spike, 
+                sensorCount, 
                 0.9 // High confidence
             );
         }
