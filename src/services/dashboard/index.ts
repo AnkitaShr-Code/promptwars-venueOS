@@ -14,10 +14,10 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 3001; // Updated to natively support Cloud Run PORT env var
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distPath = path.join(process.cwd(), 'frontend/dist');
 
 // Serve Static Frontend Assets
-app.use(express.static(path.join(__dirname, '../../../frontend/dist')));
+app.use(express.static(distPath));
 
 // Metrics Constants
 const METRIC_ALERTS = 'metric:alerts:triggered';
@@ -118,8 +118,8 @@ export class DashboardAPI {
     }
 
     public start() {
-        server.listen(PORT, () => {
-            log.info(`Dashboard API & WS Server running on port ${PORT}`);
+        server.listen(PORT as number, '0.0.0.0', () => {
+            log.info({ distPath }, `Dashboard API & WS Server running on port ${PORT}`);
         });
     }
 }
