@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3001; // Updated to natively support Cloud Run 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Serve Static Frontend Assets
-app.use(express.static(path.join(__dirname, '../../../../frontend/dist')));
+app.use(express.static(path.join(__dirname, '../../../frontend/dist')));
 
 // Metrics Constants
 const METRIC_ALERTS = 'metric:alerts:triggered';
