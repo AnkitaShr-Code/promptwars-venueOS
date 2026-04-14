@@ -68,10 +68,10 @@ const alertsFeed = document.getElementById('alerts-feed')!;
 const connectionStatus = document.getElementById('connection-status')!;
 
 // 3. Connect WebSockets
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-// Proxy routes ws://localhost:3000 to Dashboard API (which is ws://localhost:3001) usually,
-// But the user runs vite dev server on 5173. The WebSocket server is hardcoded to 3001 in backend.
-const ws = new WebSocket(`ws://${window.location.hostname}:3001`);
+const wsHost = isLocal ? `${window.location.hostname}:3001` : window.location.host;
+const ws = new WebSocket(`${protocol}//${wsHost}`);
 
 let activeAlerts = 0;
 
