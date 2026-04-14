@@ -15,7 +15,7 @@ Designed to handle large-scale sporting events with high architectural limits, V
 - **High-Fidelity Operator Dashboard (C2)**: A real-time, interactive UI showcasing a meticulously crafted `three.js` light-dark stadium model, interactive popup management panes, and synchronized WebSocket feed alerts.
 - **Self-Healing Infrastructure**: In-memory EventBus with built-in backpressure, automated missing-data interpolation, and a Redis-backed Dead Letter Queue (DLQ).
 
-## 🏗️ Architecture
+## Architecture
 
 VenueOS is built using a decoupled, event-driven architecture for maximum resilience and throughput.
 
@@ -40,7 +40,7 @@ VenueOS is built using a decoupled, event-driven architecture for maximum resili
                                                     [ Operator Dashboard UI ] --------------------+
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Node.js** (v20+ recommended)
@@ -69,7 +69,7 @@ VenueOS is built using a decoupled, event-driven architecture for maximum resili
 4. **Access the Dashboard**:
    Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-## 🧪 Halftime Simulation
+## Halftime Simulation
 
 VenueOS includes an automated stress-testing engine that simulates a 50k attendee load. When you run `npm start`, the simulation progresses through phases:
 
@@ -81,7 +81,7 @@ VenueOS includes an automated stress-testing engine that simulates a 50k attende
 3. **T=30s**: **Recovery Phase**. Halftime concludes, and alerts clear intelligently using the Hysteresis parameters.
 4. **Periodic**: The simulation routinely injects malformed events to verify the Dead Letter Queue routing.
 
-## 🛠️ The Science Under the Hood
+## The Science Under the Hood
 
 ### 1. Zone-Aware Reachability (Phantom Load)
 Not all attendees have the venue app. VenueOS applies a dynamic multiplier to sensed data based on zone context (e.g., Gates: 1.8x, Concourse: 1.5x) to estimate true crowd density accurately.
@@ -96,6 +96,6 @@ To prevent spamming users after issuing a crowd diversion:
 - $P(t) = D_{init} \cdot (1 - (R_{zone} \cdot C_{base} \cdot e^{-\lambda t}))$
 - Alerts are temporarily suppressed based on an exponential decay curve projecting when density will naturally fall.
 
-## 💻 Tech Stack
+## Tech Stack
 - **Backend**: TypeScript, Node.js, Express, `ws` (WebSockets), `ioredis`, `pino` (Structured Logging), `opossum` (Circuit Breakers).
 - **Frontend**: Vite, TypeScript, HTML5 Canvas, Vanilla CSS (Glassmorphism design).
