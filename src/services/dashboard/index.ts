@@ -5,13 +5,19 @@ import { eventBus } from '../../shared/event-bus.js';
 import { redis } from '../../shared/redis.js';
 import { createLogger } from '../../shared/logger.js';
 import { VenueEvent, HealthTier } from '../../shared/types.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const log = createLogger('DashboardAPI');
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-const PORT = process.env.DASHBOARD_API_PORT || 3001;
+const PORT = process.env.PORT || 3001; // Updated to natively support Cloud Run PORT env var
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Serve Static Frontend Assets
+app.use(express.static(path.join(__dirname, '../../../../frontend/dist')));
 
 // Metrics Constants
 const METRIC_ALERTS = 'metric:alerts:triggered';
