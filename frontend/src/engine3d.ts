@@ -25,6 +25,8 @@ export class Engine3D {
     private controls: OrbitControls;
     private zones: Map<string, THREE.Mesh> = new Map();
     private baseColors: Map<string, THREE.Color> = new Map();
+    private alertedZones: Map<string, string> = new Map();
+    private closedGates: Set<string> = new Set();
     
     // Interactivity
     private raycaster = new THREE.Raycaster();
@@ -45,7 +47,8 @@ export class Engine3D {
         this.scene.fog = new THREE.FogExp2(0x1e293b, 0.002);
 
         this.camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1500);
-        this.camera.position.set(0, 450, 450); // Angled down
+        const isMobile = window.innerWidth < 768;
+        this.camera.position.set(0, isMobile ? 600 : 450, isMobile ? 600 : 450); // Zoom out more on mobile
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -200,15 +203,23 @@ export class Engine3D {
     }
 
     private onPointerMove(event: PointerEvent) {
-        // Calculate mouse position bounded to the window
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const canvas = this.renderer.domElement;
+        const rect = canvas.getBoundingClientRect();
+        // Use renderer dimensions for accurate NDC coordinates
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     }
 
-    // Keep track of drag distance to prevent click trigging while orbiting
+    // Keep track of drag distance to prevent click triggering while orbiting
     private mouseDownPos = { x: 0, y: 0 };
     
     private onClick(event: PointerEvent) {
+        // Always recalculate from the current event to avoid stale coords on touch
+        const canvas = this.renderer.domElement;
+        const rect = canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersects = this.raycaster.intersectObjects(Array.from(this.zones.values()));
         const clickedTarget = intersects.length > 0 ? intersects[0].object as THREE.Mesh : null;
@@ -251,6 +262,15 @@ export class Engine3D {
         if (!mesh) return;
 
         mesh.userData.currentDensity = density;
+
+        // If density has dropped below the congestion threshold, clear the alert flash
+        // immediately — don't wait for the backend's hysteresis recovery event.
+        if (this.alertedZones.has(zoneId) && density < 0.8) {
+            this.alertedZones.delete(zoneId);
+        }
+
+        // Skip heatmap color update if this zone is still under an active alert.
+        if (this.alertedZones.has(zoneId)) return;
         
         const clampedDensity = Math.min(Math.max(density, 0), 1.2);
         const mat = mesh.material as THREE.MeshPhysicalMaterial;
@@ -260,15 +280,51 @@ export class Engine3D {
         const outColor = baseC.clone();
 
         if (clampedDensity > 0.8) {
-            outColor.lerp(new THREE.Color(0xf59e0b), (clampedDensity - 0.8) * 2.5); // Mix with Amber
+            outColor.lerp(new THREE.Color(0xf59e0b), (clampedDensity - 0.8) * 2.5);
         }
         if (clampedDensity > 1.0) {
-           outColor.lerp(new THREE.Color(0xef4444), (clampedDensity - 1.0) * 5.0); // Hot red
+           outColor.lerp(new THREE.Color(0xef4444), (clampedDensity - 1.0) * 5.0);
         }
 
         mat.color.copy(outColor);
         mat.emissive.copy(outColor);
         mat.emissiveIntensity = 0.2 + (clampedDensity * 0.8);
+    }
+
+    /**
+     * Sets or clears an alert state for a zone.
+     * When severity is 'LOW' or null, the alert is cleared and the zone
+     * reverts to its density-based heatmap color.
+     */
+    public setZoneAlert(zoneId: string, severity: string | null) {
+        const mesh = this.zones.get(zoneId);
+        if (!mesh) return;
+
+        if (!severity || severity === 'LOW') {
+            // Clear alert — restore density-based color
+            this.alertedZones.delete(zoneId);
+            const density = mesh.userData.currentDensity ?? 0;
+            this.updateZoneHeat(zoneId, density);
+        } else {
+            // Activate alert — animate loop will handle pulsing
+            this.alertedZones.set(zoneId, severity);
+        }
+    }
+
+    /**
+     * Returns whether a zone is currently in an active alert state.
+     */
+    public isZoneAlerted(zoneId: string): boolean {
+        return this.alertedZones.has(zoneId);
+    }
+
+    /**
+     * Opens or closes entry gates for a zone.
+     * Closed gates show a prominent visual lock indicator on the 3D label.
+     */
+    public setZoneGateClosed(zoneId: string, closed: boolean) {
+        if (closed) this.closedGates.add(zoneId);
+        else        this.closedGates.delete(zoneId);
     }
 
     private onWindowResize() {
@@ -277,6 +333,10 @@ export class Engine3D {
         this.camera.aspect = container.clientWidth / container.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(container.clientWidth, container.clientHeight);
+        // Adjust camera distance for portrait/landscape switch
+        const isMobile = window.innerWidth < 768;
+        const targetDist = isMobile ? 750 : 450;
+        this.camera.position.setLength(Math.sqrt(2) * targetDist);
     }
 
     private animate = () => {
@@ -304,26 +364,67 @@ export class Engine3D {
              }
         }
 
-        // 2. Animate expansion (Click interactions)
+        // 2. Animate expansion (Click interactions) + Alert flash
+        const t = performance.now() / 1000; // seconds
         this.zones.forEach((mesh) => {
             const targetPos = mesh.userData.expanded ? 
-                mesh.userData.basePos.clone().add(mesh.userData.expandDir.clone().multiplyScalar(40)) : // Expand outward slightly more
+                mesh.userData.basePos.clone().add(mesh.userData.expandDir.clone().multiplyScalar(40)) :
                 mesh.userData.basePos; 
             mesh.position.lerp(targetPos, 0.15); 
             
+            // Alert pulsing override — driven every frame by sine wave
+            const alertSeverity = this.alertedZones.get(mesh.userData.id);
+            if (alertSeverity) {
+                const mat = mesh.material as THREE.MeshPhysicalMaterial;
+                // Pulse between 0.3 and 1.0 at ~1.5 Hz
+                const pulse = 0.65 + Math.sin(t * Math.PI * 3) * 0.35;
+                const alertColor = alertSeverity === 'CRITICAL'
+                    ? new THREE.Color(0xff1a1a)   // Bright red for CRITICAL
+                    : new THREE.Color(0xff6600);  // Orange-red for HIGH
+                mat.color.copy(alertColor);
+                mat.emissive.copy(alertColor);
+                mat.emissiveIntensity = pulse * 2.0; // Strong glow pulse
+                mat.opacity = 0.6 + pulse * 0.3;
+            }
+
             // Update the persistent overlay labels
             const label = this.labels.get(mesh.userData.id);
             if (label) {
                 const vector = mesh.position.clone();
-                // Push label outward to the edge of the slice
                 vector.add(mesh.userData.expandDir.clone().multiplyScalar(150));
                 vector.project(this.camera);
 
-                const x = (0.5 + vector.x / 2) * window.innerWidth;
-                const y = (0.5 - vector.y / 2) * window.innerHeight;
+                const container = this.renderer.domElement;
+                const x = (0.5 + vector.x / 2) * container.clientWidth;
+                const y = (0.5 - vector.y / 2) * container.clientHeight;
                 label.style.left = `${x}px`;
-                label.style.top = `${y}px`;
+                label.style.top  = `${y}px`;
                 label.style.display = 'block';
+
+                const isClosed = this.closedGates.has(mesh.userData.id);
+                const textColor = alertSeverity
+                    ? (alertSeverity === 'CRITICAL' ? '#ff4444' : '#ff8800')
+                    : '#ffffff';
+
+                // Rebuild label only when state changes to avoid thrashing the DOM
+                const newHtml = `
+                    <span style="color:${textColor};font-weight:${alertSeverity ? 900 : 700}">
+                        ${mesh.userData.name}<br/>
+                        <span style="color:${mesh.userData.color}">${mesh.userData.id}</span>
+                    </span>
+                    ${isClosed ? `
+                    <br/><span style="
+                        background: rgba(220,0,0,0.85);
+                        color: #fff;
+                        font-size: 9px;
+                        padding: 1px 5px;
+                        border-radius: 3px;
+                        letter-spacing: 0.05em;
+                        display:inline-block;
+                        margin-top:3px;
+                    ">🚫 ENTRY CLOSED</span>` : ''}`;
+
+                if (label.innerHTML !== newHtml) label.innerHTML = newHtml;
             }
         });
 

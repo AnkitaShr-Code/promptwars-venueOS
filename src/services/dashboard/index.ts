@@ -100,7 +100,7 @@ export class DashboardAPI {
 
     private setupSubscriptions() {
         // Broadcast all relevant updates to connected UI clients
-        const topics = ['update.venue', 'alert.crowd', 'update.queue', 'metrics.dashboard'];
+        const topics = ['update.venue', 'alert.crowd', 'update.queue', 'metrics.dashboard', 'notification.sent', 'exit.guidance'];
         
         topics.forEach(topic => {
             eventBus.subscribe(topic, async (event: VenueEvent) => {

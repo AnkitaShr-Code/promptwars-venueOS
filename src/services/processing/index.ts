@@ -20,7 +20,8 @@ const ZONE_CAPS: Record<string, number> = {
 
 const GLOBAL_MAX_CAPACITY = 35374; // Match frontend total capacity
 const CONGESTION_THRESHOLD = 0.8;
-const RECOVERY_THRESHOLD = 0.7;
+const CRITICAL_THRESHOLD = 1.0;
+const RECOVERY_THRESHOLD = 0.75; // Close to trigger so stale alerts self-clear within 1-2 cycles
 const DECAY_LAMBDA = 0.01; // Decay rate for compliance curve
 
 export class CrowdProcessingEngine {
@@ -41,13 +42,31 @@ export class CrowdProcessingEngine {
      * Updates the ground-truth occupancy tally
      */
     async handleAccessEvent(event: AccessEvent) {
+        // Check current occupancy before allowing entries
+        if (event.accessType === AccessType.ENTRY) {
+            const currentTotal = parseInt(await redis.get(this.OCCUPANCY_KEY) || '0', 10);
+            if (currentTotal >= GLOBAL_MAX_CAPACITY) {
+                log.warn(
+                    { currentTotal, GLOBAL_MAX_CAPACITY, gateId: event.gateId },
+                    'ENTRY DENIED: Venue at full capacity. No further ingress permitted.'
+                );
+                return; // Hard cap — no new entries beyond capacity
+            }
+        }
+
         const delta = event.accessType === AccessType.ENTRY ? event.count : -event.count;
         let newTotal = await redis.incrby(this.OCCUPANCY_KEY, delta);
         
-        // Prevent negative occupancy 
+        // Prevent negative occupancy (e.g. spurious exit pulses)
         if (newTotal < 0) {
             newTotal = 0;
             await redis.set(this.OCCUPANCY_KEY, '0');
+        }
+
+        // Also hard-cap the stored value to maximum (safety net for race conditions)
+        if (newTotal > GLOBAL_MAX_CAPACITY) {
+            newTotal = GLOBAL_MAX_CAPACITY;
+            await redis.set(this.OCCUPANCY_KEY, String(GLOBAL_MAX_CAPACITY));
         }
 
         log.debug({ delta, newTotal, correlationId: event.correlationId }, 'Global occupancy updated');
@@ -62,13 +81,15 @@ export class CrowdProcessingEngine {
         } as VenueStateUpdate);
 
         // Global capacity hysteresis alert
-        const alertKey = `${this.ALERT_PREFIX}VENUE`;
-        const isAlertActive = (await redis.get(alertKey)) === 'true';
+        const alertKey = `${this.ALERT_PREFIX}VENUE:severity`;
+        const lastSeverity = await redis.get(alertKey);
 
-        if (!isAlertActive && newTotal >= GLOBAL_MAX_CAPACITY) {
-            await this.triggerAlert('VENUE', 'CRITICAL', 'Venue is at mathematical capacity. Restrict ingress immediately.', event.correlationId);
-        } else if (isAlertActive && newTotal <= (GLOBAL_MAX_CAPACITY * 0.98)) {
+        if (!lastSeverity && newTotal >= GLOBAL_MAX_CAPACITY) {
+            await this.triggerAlert('VENUE', 'CRITICAL', 'Venue is at maximum capacity. Entry is suspended at all gates.', event.correlationId);
+            await redis.set(alertKey, 'CRITICAL');
+        } else if (lastSeverity && newTotal <= (GLOBAL_MAX_CAPACITY * 0.98)) {
             await this.clearAlert('VENUE', event.correlationId);
+            await redis.del(alertKey);
         }
     }
 
@@ -86,13 +107,22 @@ export class CrowdProcessingEngine {
         log.info({ zoneId, rawDensity, adjustedDensity, correlationId: event.correlationId }, 'Zone density processed');
 
         // 2. HYSTERESIS LOGIC (No-Flap Alerts)
-        const alertKey = `${this.ALERT_PREFIX}${zoneId}`;
-        const isAlertActive = (await redis.get(alertKey)) === 'true';
+        const alertKey = `${this.ALERT_PREFIX}${zoneId}:severity`;
+        const lastSeverity = await redis.get(alertKey); // null, 'HIGH', or 'CRITICAL'
 
-        if (!isAlertActive && adjustedDensity >= CONGESTION_THRESHOLD) {
-            await this.triggerAlert(zoneId, 'HIGH', 'Congestion detected. Threshold exceeded.', event.correlationId);
-        } else if (isAlertActive && adjustedDensity <= RECOVERY_THRESHOLD) {
+        let currentSeverity: string | null = null;
+        if (adjustedDensity >= CRITICAL_THRESHOLD) {
+            currentSeverity = 'CRITICAL';
+        } else if (adjustedDensity >= CONGESTION_THRESHOLD) {
+            currentSeverity = 'HIGH';
+        }
+
+        if (currentSeverity && currentSeverity !== lastSeverity) {
+            await this.triggerAlert(zoneId, currentSeverity, currentSeverity === 'CRITICAL' ? 'Critical congestion. Gates locked.' : 'High congestion. Monitor closely.', event.correlationId);
+            await redis.set(alertKey, currentSeverity);
+        } else if (!currentSeverity && lastSeverity && adjustedDensity <= RECOVERY_THRESHOLD) {
             await this.clearAlert(zoneId, event.correlationId);
+            await redis.del(alertKey);
         }
 
         // 3. BROADCAST UPDATE
@@ -120,7 +150,6 @@ export class CrowdProcessingEngine {
 
     private async triggerAlert(zoneId: string, severity: any, message: string, correlationId: string) {
         log.warn({ zoneId, severity }, 'ACTivating congestion alert');
-        await redis.set(`${this.ALERT_PREFIX}${zoneId}`, 'true');
         
         await eventBus.publish({
             type: 'alert.crowd',
@@ -136,7 +165,6 @@ export class CrowdProcessingEngine {
 
     private async clearAlert(zoneId: string, correlationId: string) {
         log.info({ zoneId }, 'CLEARing congestion alert');
-        await redis.del(`${this.ALERT_PREFIX}${zoneId}`);
         
         await eventBus.publish({
             type: 'alert.crowd',

@@ -78,6 +78,20 @@ export interface QueuePulseEvent extends BaseEvent {
     pulseType: 'ARRIVAL' | 'DEPARTURE';
 }
 
+export interface OperatorNotification extends BaseEvent {
+    type: 'notification.sent';
+    message: string;
+    category: 'redirect' | 'info' | 'dispatch';
+}
+
+export interface ExitGuidanceEvent extends BaseEvent {
+    type: 'exit.guidance';
+    zoneId: string;
+    exitGate: string;
+    alternateEntry: string;
+    reason: string;
+}
+
 export type VenueEvent = 
     | AccessEvent
     | SensedCrowdEvent 
@@ -85,4 +99,6 @@ export type VenueEvent =
     | CongestionAlert 
     | QueueStateUpdate 
     | QueuePulseEvent
-    | DashboardMetrics;
+    | DashboardMetrics
+    | OperatorNotification
+    | ExitGuidanceEvent;
